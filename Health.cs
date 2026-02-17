@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace Drafts.Rpg
 {
-    public class Health : MonoBehaviour
+    [Serializable]
+    public class Health
     {
         public class Changes
         {
@@ -18,7 +19,6 @@ namespace Drafts.Rpg
         [field: SerializeField] public int Max { get; private set; }
         [field: SerializeField] public int Current { get; private set; }
         public float Normalized => Current / (float)Max;
-
         public event Action<Changes> OnChanged;
 
         public void Awake() => FullHeal(null);

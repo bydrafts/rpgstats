@@ -11,40 +11,40 @@ namespace Drafts.Rpg
         Remove,
     }
 
-    public class StatuEffectList<T> : IReadOnlyDictionary<T, T> where T : IStatusEffect<T>
+    public class StatuEffectList<T,TCtx> : IReadOnlyDictionary<T, T> where T : IStatusEffect<TCtx>
     {
-        public T Context { get; }
+        public TCtx Context { get; }
         private readonly Dictionary<T, T> _effects = new();
         private readonly HashSet<T> _toRemove = new();
         public event Action<StatuEffectEvent, T> OnChanged;
 
-        public StatuEffectList(T context) => Context = context;
+        public StatuEffectList(TCtx context) => Context = context;
 
         public void Add(T status)
         {
-            if (status.Context != null)
-                throw new Exception("Context is not null. You should not use a clone in Add nor Remove");
+            if (status.IsClone)
+                throw new Exception("You should not use a clone in Add nor Remove");
 
             if (_effects.TryGetValue(status, out var effect))
             {
-                effect.Stack(status);
+                effect.Stack(Context, status);
                 OnChanged?.Invoke(StatuEffectEvent.Stack, effect);
             }
             else
             {
-                _effects[status] = effect = (T)status.Clone(Context);
-                effect.Apply();
+                _effects[status] = effect = (T)status.Clone();
+                effect.Apply(Context);
                 OnChanged?.Invoke(StatuEffectEvent.Add, effect);
             }
         }
 
         public void Remove(T status)
         {
-            if (status.Context != null)
+            if (status.IsClone)
                 throw new Exception("Context is not null. You should not use a clone in Add nor Remove");
 
             if (!_effects.TryGetValue(status, out var effect)) return;
-            effect.Remove();
+            effect.Remove(Context);
             _effects.Remove(status);
             OnChanged?.Invoke(StatuEffectEvent.Remove, effect);
         }
@@ -54,7 +54,7 @@ namespace Drafts.Rpg
             _toRemove.Clear();
 
             foreach (var (status, effect) in _effects)
-                if (!effect.Tick(deltaTime))
+                if (!effect.Tick(Context, deltaTime))
                     _toRemove.Add(status);
 
             foreach (var status in _toRemove)
