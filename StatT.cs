@@ -18,30 +18,22 @@ namespace Drafts.Rpg
         public void AddMod(IBonus<T> bonus)
         {
             Mod[bonus.Source] = bonus.Value;
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
+            Recalculate();
         }
 
         public void RemoveMod(IBonus<T> value)
         {
             if (!Mod.Remove(value)) return;
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
+            Recalculate();
         }
 
         public void Recalculate()
         {
-            Total = GetTotal();
+            Total = Base;
+            foreach (var v in Mod) Total = Resolve(Total, v.Value);
             OnChanged?.Invoke(Total);
         }
 
-        public T GetTotal()
-        {
-            var total = Base;
-            foreach (var v in Mod) total = Resolve(total, v.Value);
-            return total;
-        }
-
-        public static implicit operator T(Stat<T> s) => s.GetTotal();
+        public static implicit operator T(Stat<T> s) => s.Total;
     }
 }

@@ -4,73 +4,70 @@ using UnityEngine;
 
 namespace Drafts.Rpg
 {
+    public enum StatBonus
+    {
+        Add,
+        Mult,
+    }
+
     [Serializable]
     public class Stat
     {
-        public Stat(string name, float @base)
-        {
-            Name = name;
-            Base = @base;
-            Total = @base;
-        }
+        public Stat() { }
+        public Stat(float @base) => Total = Base = @base;
+        public Stat(string name) => this.name = name;
 
-        [field: SerializeField] public string Name { get; private set; }
-        [field: SerializeField] public float Base { get; private set; }
+        [SerializeField] private string name;
         private Dictionary<object, float> Bonus { get; } = new();
         private Dictionary<object, float> Mult { get; } = new();
-        public float Total { get; private set; }
+
+        public string Name => name;
+        [field: SerializeField] public float Base { get; private set; }
+        [field: SerializeField] public float Total { get; protected set; }
+        public int IntTotal => Mathf.RoundToInt(Total);
         public event Action<float> OnChanged;
 
-        public float GetTotal()
+        public virtual void Recalculate()
         {
-            var total = Base;
-            foreach (var v in Bonus) total += v.Value;
-            foreach (var v in Mult) total *= v.Value;
-            return Mathf.RoundToInt(total);
+            Total = Base;
+            foreach (var v in Bonus) Total += v.Value;
+            foreach (var v in Mult) Total *= v.Value;
+            OnChanged?.Invoke(Total);
+        }
+
+        public void Reset(float @base)
+        {
+            Bonus.Clear();
+            Mult.Clear();
+            SetBase(@base);
         }
 
         public void SetBase(float value)
         {
             Base = value;
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
+            Recalculate();
         }
 
-        public void AddBonus(IBonus<float> bonus)
+        public virtual void AddBonus(IBonus<StatBonus, float> bonus)
         {
-            Bonus[bonus.Source] = bonus.Value;
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
+            switch (bonus.Type)
+            {
+                case StatBonus.Add: Bonus[bonus.Source] = bonus.Value; break;
+                case StatBonus.Mult: Mult[bonus.Source] = bonus.Value; break;
+                default: throw new ArgumentOutOfRangeException();
+            }
+
+            Recalculate();
         }
 
-        public void RemoveBonus(IBonus<float> bonus)
+        public virtual void RemoveBonus(IBonus<StatBonus, float> bonus)
         {
-            if (!Bonus.Remove(bonus)) return;
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
+            if (!Bonus.Remove(bonus.Source) &&
+                !Mult.Remove(bonus.Source)) return;
+            Recalculate();
         }
 
-        public void AddMult(IBonus<float> bonus)
-        {
-            Mult[bonus.Source] = bonus.Value;
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
-        }
-
-        public void RemoveMult(IBonus<float> bonus)
-        {
-            if (!Mult.Remove(bonus)) return;
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
-        }
-
-        public void Recalculate()
-        {
-            Total = GetTotal();
-            OnChanged?.Invoke(Total);
-        }
-
-        public int GetIntTotal() => Mathf.RoundToInt(GetTotal());
-        public static implicit operator float(Stat s) => s.GetTotal();
+        public static implicit operator float(Stat s) => s.Total;
+        public static implicit operator int(Stat s) => s.IntTotal;
     }
 }
