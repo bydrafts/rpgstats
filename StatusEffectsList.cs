@@ -4,21 +4,21 @@ using System.Collections.Generic;
 
 namespace Drafts.Rpg
 {
-    public enum StatuEffectEvent
+    public enum StatusEffectEvent
     {
         Add,
         Stack,
         Remove,
     }
 
-    public class StatuEffectList<T,TCtx> : IReadOnlyDictionary<T, T> where T : IStatusEffect<TCtx>
+    public class StatusEffectList<T,TCtx> : IReadOnlyDictionary<T, T> where T : IStatusEffect<TCtx>
     {
         public TCtx Context { get; }
         private readonly Dictionary<T, T> _effects = new();
         private readonly HashSet<T> _toRemove = new();
-        public event Action<StatuEffectEvent, T> OnChanged;
+        public event Action<StatusEffectEvent, T> OnChanged;
 
-        public StatuEffectList(TCtx context) => Context = context;
+        public StatusEffectList(TCtx context) => Context = context;
 
         public void Add(T status)
         {
@@ -28,13 +28,13 @@ namespace Drafts.Rpg
             if (_effects.TryGetValue(status, out var effect))
             {
                 effect.Stack(Context, status);
-                OnChanged?.Invoke(StatuEffectEvent.Stack, effect);
+                OnChanged?.Invoke(StatusEffectEvent.Stack, effect);
             }
             else
             {
                 _effects[status] = effect = (T)status.Clone();
                 effect.Apply(Context);
-                OnChanged?.Invoke(StatuEffectEvent.Add, effect);
+                OnChanged?.Invoke(StatusEffectEvent.Add, effect);
             }
         }
 
@@ -46,7 +46,7 @@ namespace Drafts.Rpg
             if (!_effects.TryGetValue(status, out var effect)) return;
             effect.Remove(Context);
             _effects.Remove(status);
-            OnChanged?.Invoke(StatuEffectEvent.Remove, effect);
+            OnChanged?.Invoke(StatusEffectEvent.Remove, effect);
         }
 
         public void Tick(float deltaTime)
