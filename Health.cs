@@ -16,14 +16,21 @@ namespace Drafts.Rpg
             public bool Revive;
         }
 
+        public object Context { get; private set; }
         [field: SerializeField] public int Max { get; private set; }
         [field: SerializeField] public int Current { get; private set; }
         public float Normalized => Current / (float)Max;
         public event Action<Changes> OnChanged;
 
+        public Health() { }
+        public Health(int max, object ctx = null)
+        {
+            Context = ctx;
+            Current = Max = max;
+        }
+        
         public void Awake() => FullHeal(null);
         public void FullHeal(object source) => Set(source, Max);
-
         public void SetMax(object source, int value) => Max = value;
         public Changes Add(object source, int value) => Set(source, Current + value);
 
