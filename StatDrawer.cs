@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace Skydeck.Editor
 {
-    [CustomPropertyDrawer(typeof(Stat))]
+    [CustomPropertyDrawer(typeof(GenericStat<,>), true)]
+    [CustomPropertyDrawer(typeof(SimpleStat<>), true)]
     public class StatDrawer : PropertyDrawer
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
