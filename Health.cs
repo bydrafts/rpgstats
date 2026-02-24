@@ -48,7 +48,7 @@ namespace Drafts.Rpg
                 Current = next,
                 Delta = delta,
                 Fatal = delta < 0 && next == 0,
-                Revive = delta > 0 && next > 0
+                Revive = delta > 0 && next == delta
             };
 
             if (delta != 0)
