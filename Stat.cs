@@ -10,9 +10,9 @@ namespace Drafts.Rpg
     }
 
     [Serializable]
-    public class Stat : GenericStat<float, StatBonus>
+    public class FloatStat : GenericStat<float, StatBonus>
     {
-        public Stat(string name, float min, float max, float @base = 0)
+        public FloatStat(string name, float min, float max, float @base = 0)
             : base(name, min, max, @base) => Bonus = new()
         {
             { StatBonus.Add, new() },
@@ -28,7 +28,7 @@ namespace Drafts.Rpg
         }
 
         public int IntTotal => Mathf.RoundToInt(Total);
-        public static implicit operator float(Stat s) => s.Total;
-        public static implicit operator int(Stat s) => s.IntTotal;
+        public static implicit operator float(FloatStat s) => s.Total;
+        public static implicit operator int(FloatStat s) => s.IntTotal;
     }
 }

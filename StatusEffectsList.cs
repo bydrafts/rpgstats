@@ -1,22 +1,24 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using NotifyAgs = System.Collections.Specialized.NotifyCollectionChangedEventArgs;
+using NotifyAction = System.Collections.Specialized.NotifyCollectionChangedAction;
 
 namespace Drafts.Rpg
 {
     public enum StatusEffectEvent
     {
-        Add,
-        Stack,
-        Remove,
+        Add, Stack, Remove,
     }
 
-    public class StatusEffectList<T, TCtx> : IReadOnlyDictionary<object, T> where T : IStatusEffect<TCtx>
+    public class StatusEffectList<T, TCtx> : IReadOnlyDictionary<object, T>, INotifyCollectionChanged where T : IStatusEffect<TCtx>
     {
         public TCtx Context { get; }
         private readonly Dictionary<object, T> _effects = new();
         private readonly HashSet<object> _toRemove = new();
         public event Action<StatusEffectEvent, T> OnChanged;
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
 
         public StatusEffectList(TCtx context) => Context = context;
 
@@ -32,6 +34,7 @@ namespace Drafts.Rpg
             _effects[status.Key] = status;
             status.Apply(Context);
             OnChanged?.Invoke(StatusEffectEvent.Add, status);
+            CollectionChanged?.Invoke(this, new NotifyAgs(NotifyAction.Add, status));
         }
 
         public void Remove(object key)
@@ -40,6 +43,7 @@ namespace Drafts.Rpg
             effect.Remove(Context);
             _effects.Remove(key);
             OnChanged?.Invoke(StatusEffectEvent.Remove, effect);
+            CollectionChanged?.Invoke(this, new NotifyAgs(NotifyAction.Remove, effect));
         }
 
         public void Tick(float deltaTime)
