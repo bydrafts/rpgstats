@@ -33,13 +33,12 @@ namespace Drafts.Rpg
         public void FullHeal(object source) => Set(source, Max);
         public void SetMax(object source, int value) => Max = value;
         public Changes Add(object source, int value) => Set(source, Current + value);
+        public Changes SimulateAdd(object source, int value) => SimulateSet(source, Current + value);
 
-        public Changes Set(object source, int value)
+        public Changes SimulateSet(object source, int value)
         {
             var next = Mathf.Clamp(value, 0, Max);
             var delta = next - Current;
-
-            Current = next;
 
             var changes = new Changes
             {
@@ -51,7 +50,15 @@ namespace Drafts.Rpg
                 Revive = delta > 0 && next == delta
             };
 
-            if (delta != 0)
+            return changes;
+        }
+        
+        public Changes Set(object source, int value)
+        {
+            var changes = SimulateSet(source, value);
+            Current = changes.Current;
+
+            if (changes.Delta != 0)
                 OnChanged?.Invoke(changes);
             return changes;
         }
