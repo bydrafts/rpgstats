@@ -23,15 +23,22 @@ namespace Drafts.Rpg
         public event Action<Changes> OnChanged;
 
         public Health() { }
+
         public Health(int max, object ctx = null)
         {
             Context = ctx;
             Current = Max = max;
         }
-        
+
         public void Awake() => FullHeal(null);
         public void FullHeal(object source) => Set(source, Max);
-        public void SetMax(object source, int value) => Max = value;
+
+        public Changes SetMax(object source, int value)
+        {
+            Max = value;
+            return Set(source, Max);
+        }
+
         public Changes Add(object source, int value) => Set(source, Current + value);
         public Changes SimulateAdd(object source, int value) => SimulateSet(source, Current + value);
 
@@ -52,7 +59,7 @@ namespace Drafts.Rpg
 
             return changes;
         }
-        
+
         public Changes Set(object source, int value)
         {
             var changes = SimulateSet(source, value);
