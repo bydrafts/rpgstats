@@ -1,11 +1,10 @@
 namespace Drafts.Rpg
 {
-    public interface IStatusEffect<T>
+    public interface IStatusEffect<in T>
     {
-        object Key { get; }
         void Apply(T ctx);
+        void Stack(T ctx, T other);
         void Remove(T ctx);
-        void Stack(T ctx, IStatusEffect<T> other);
         /// <summary>Return false to remove.</summary>
         bool Tick(T ctx, float deltaTime);
     }

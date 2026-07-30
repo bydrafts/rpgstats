@@ -12,59 +12,57 @@ namespace Drafts.Rpg
         Add, Stack, Remove,
     }
 
-    public class StatusEffectList<T, TCtx> : IReadOnlyDictionary<object, T>, INotifyCollectionChanged where T : IStatusEffect<TCtx>
+    public class StatusEffectList<T> : IReadOnlyDictionary<object, T>, INotifyCollectionChanged
+        where T : IStatusContext<T>
     {
-        public TCtx Context { get; }
-        private readonly Dictionary<object, T> _effects = new();
+        protected readonly Dictionary<object, T> List = new();
         private readonly HashSet<object> _toRemove = new();
         public event Action<StatusEffectEvent, T> OnChanged;
         public event NotifyCollectionChangedEventHandler CollectionChanged;
 
-        public StatusEffectList(TCtx context) => Context = context;
-
-        public void Add(T status)
+        public virtual void Add(T ctx)
         {
-            if (_effects.TryGetValue(status.Key, out var effect))
+            if (List.TryGetValue(ctx.Key, out var existing))
             {
-                effect.Stack(Context, status);
-                OnChanged?.Invoke(StatusEffectEvent.Stack, effect);
+                existing.Effect.Stack(existing, ctx);
+                OnChanged?.Invoke(StatusEffectEvent.Stack, existing);
                 return;
             }
 
-            _effects[status.Key] = status;
-            status.Apply(Context);
-            OnChanged?.Invoke(StatusEffectEvent.Add, status);
-            CollectionChanged?.Invoke(this, new NotifyAgs(NotifyAction.Add, status));
+            List[ctx.Key] = ctx;
+            ctx.Effect.Apply(ctx);
+            OnChanged?.Invoke(StatusEffectEvent.Add, ctx);
+            CollectionChanged?.Invoke(this, new NotifyAgs(NotifyAction.Add, ctx));
         }
 
-        public void Remove(object key)
+        public virtual void Remove(object key)
         {
-            if (!_effects.TryGetValue(key, out var effect)) return;
-            effect.Remove(Context);
-            _effects.Remove(key);
-            OnChanged?.Invoke(StatusEffectEvent.Remove, effect);
-            CollectionChanged?.Invoke(this, new NotifyAgs(NotifyAction.Remove, effect));
+            if (!List.TryGetValue(key, out var ctx)) return;
+            ctx.Effect.Remove(ctx);
+            List.Remove(key);
+            OnChanged?.Invoke(StatusEffectEvent.Remove, ctx);
+            CollectionChanged?.Invoke(this, new NotifyAgs(NotifyAction.Remove, ctx));
         }
 
-        public void Tick(float deltaTime)
+        public virtual void Tick(float deltaTime)
         {
             _toRemove.Clear();
 
-            foreach (var (key, effect) in _effects)
-                if (!effect.Tick(Context, deltaTime))
-                    _toRemove.Add(key);
+            foreach (var ctx in List.Values)
+                if (!ctx.Effect.Tick(ctx, deltaTime))
+                    _toRemove.Add(ctx.Key);
 
             foreach (var key in _toRemove)
                 Remove(key);
         }
 
-        public int Count => _effects.Count;
-        public bool ContainsKey(object key) => _effects.ContainsKey(key);
-        public bool TryGetValue(object key, out T value) => _effects.TryGetValue(key, out value);
-        public T this[object key] => _effects[key];
-        public IEnumerable<object> Keys => _effects.Keys;
-        public IEnumerable<T> Values => _effects.Values;
-        public IEnumerator<KeyValuePair<object, T>> GetEnumerator() => _effects.GetEnumerator();
+        public int Count => List.Count;
+        public bool ContainsKey(object key) => List.ContainsKey(key);
+        public bool TryGetValue(object key, out T value) => List.TryGetValue(key, out value);
+        public T this[object key] => List[key];
+        public IEnumerable<object> Keys => List.Keys;
+        public IEnumerable<T> Values => List.Values;
+        public IEnumerator<KeyValuePair<object, T>> GetEnumerator() => List.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
